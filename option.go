@@ -5,8 +5,9 @@ import (
 )
 
 type Options struct {
-	Addr net.Addr
-	Log  Logger
+	Addr    net.Addr
+	Log     Logger
+	Creator ClientCreator
 }
 
 type Option func(options *Options)
@@ -28,5 +29,11 @@ func WithPort(port uint32) Option {
 func WithLogger(log Logger) Option {
 	return func(options *Options) {
 		options.Log = log
+	}
+}
+
+func WithClientCreator(creator ClientCreator) Option {
+	return func(options *Options) {
+		options.Creator = creator
 	}
 }

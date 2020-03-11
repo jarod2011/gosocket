@@ -6,7 +6,25 @@ import (
 
 type syncClient struct {
 	handler HandleFunc
-	conn    net.Conn
+	conn    *Conn
+	uuid    interface{}
+}
+
+func (client *syncClient) Info() ClientInfo {
+	return ClientInfo{
+		Addr:       client.conn.RemoteAddr().String(),
+		ReadBytes:  client.conn.readTotal,
+		WriteBytes: client.conn.writeTotal,
+		ConnectAt:  client.conn.Time(),
+	}
+}
+
+func (client *syncClient) SetId(v interface{}) {
+	client.uuid = v
+}
+
+func (client *syncClient) GetId() interface{} {
+	return client.uuid
 }
 
 func (client *syncClient) Handle() error {
@@ -20,7 +38,7 @@ func (client *syncClient) Close() error {
 type HandleFunc func(conn net.Conn) error
 
 func NewSyncClientCreator(handleFunc HandleFunc) ClientCreator {
-	return func(cc net.Conn) Client {
+	return func(cc *Conn) Client {
 		return &syncClient{
 			conn:    cc,
 			handler: handleFunc,

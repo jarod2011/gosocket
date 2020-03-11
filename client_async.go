@@ -2,16 +2,33 @@ package gosocket
 
 import (
 	"context"
-	"net"
 	"sync"
 	"time"
 )
 
 type asyncClient struct {
-	conn      net.Conn
+	conn      *Conn
 	scheduler *schedule
 	opt       AsyncOptions
 	handle    Handler
+	uuid      interface{}
+}
+
+func (client *asyncClient) Info() ClientInfo {
+	return ClientInfo{
+		Addr:       client.conn.RemoteAddr().String(),
+		ReadBytes:  client.conn.readTotal,
+		WriteBytes: client.conn.writeTotal,
+		ConnectAt:  client.conn.Time(),
+	}
+}
+
+func (client *asyncClient) SetId(v interface{}) {
+	client.uuid = v
+}
+
+func (client *asyncClient) GetId() interface{} {
+	return client.uuid
 }
 
 func (client *asyncClient) Handle() error {
@@ -72,6 +89,7 @@ func (client *asyncClient) workProcess(wg *sync.WaitGroup) {
 }
 
 func (client *asyncClient) Close() error {
+	// TODO close client
 	panic("implement me")
 }
 
@@ -127,7 +145,7 @@ type AsyncOptions struct {
 }
 
 func NewAsyncClient(handler Handler, options AsyncOptions) ClientCreator {
-	return func(cc net.Conn) Client {
+	return func(cc *Conn) Client {
 		s := schedule{}
 		if options.ReadTimeout <= 0 {
 			options.ReadTimeout = DefaultReadTimeout
