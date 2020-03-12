@@ -94,6 +94,7 @@ loop:
 			cli := s.opt.Creator(newConn(conn))
 			// save to clients
 			s.clients.Save(cli)
+			wg.Add(1)
 			go func(c Client) {
 				defer wg.Done()
 				defer s.clients.Delete(c)

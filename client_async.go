@@ -12,6 +12,7 @@ type asyncClient struct {
 	opt       AsyncOptions
 	handle    Handler
 	uuid      interface{}
+	errChan   chan error
 }
 
 func (client *asyncClient) Info() ClientInfo {
@@ -41,6 +42,12 @@ func (client *asyncClient) Handle() error {
 		go client.workProcess(&wg)
 	}
 	wg.Wait()
+	var lastErr error
+	select {
+	case lastErr = <-client.errChan:
+	default:
+	}
+	client.handle.OnClose(client.conn, lastErr)
 	client.conn.Close()
 	return nil
 }
@@ -123,6 +130,7 @@ type Handler interface {
 	OnRead(buf []byte, scheduler Scheduler) bool
 	OnWork(buf []byte, scheduler Scheduler)
 	OnWrite(buf []byte) ([]byte, error)
+	OnClose(conn *Conn, lastErr error)
 }
 
 type Scheduler interface {

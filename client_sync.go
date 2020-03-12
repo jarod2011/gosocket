@@ -1,9 +1,5 @@
 package gosocket
 
-import (
-	"net"
-)
-
 type syncClient struct {
 	handler HandleFunc
 	conn    *Conn
@@ -35,7 +31,7 @@ func (client *syncClient) Close() error {
 	return client.conn.Close()
 }
 
-type HandleFunc func(conn net.Conn) error
+type HandleFunc func(conn *Conn) error
 
 func NewSyncClientCreator(handleFunc HandleFunc) ClientCreator {
 	return func(cc *Conn) Client {
