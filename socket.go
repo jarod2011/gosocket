@@ -7,14 +7,14 @@ import (
 	"sync/atomic"
 )
 
-type Service interface {
+type Socket interface {
 	Init(options ...Option) error
 	Run() error
 	Close() bool
 	Store() ClientStore
 }
 
-type service struct {
+type server struct {
 	opt Options
 	sync.RWMutex
 	listen  net.Listener
@@ -24,11 +24,11 @@ type service struct {
 	cancel  context.CancelFunc
 }
 
-func (s *service) Store() ClientStore {
+func (s *server) Store() ClientStore {
 	return s.clients
 }
 
-func (s *service) Init(options ...Option) error {
+func (s *server) Init(options ...Option) error {
 	s.Lock()
 	defer s.Unlock()
 	for _, o := range options {
@@ -43,7 +43,7 @@ func (s *service) Init(options ...Option) error {
 	return nil
 }
 
-func (s *service) Run() error {
+func (s *server) Run() error {
 	s.Lock()
 	listen, err := net.Listen(s.opt.Addr.Network(), s.opt.Addr.String())
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *service) Run() error {
 	return s.run()
 }
 
-func (s *service) Close() bool {
+func (s *server) Close() bool {
 	if atomic.CompareAndSwapUint32(&s.closed, 0, 1) {
 		s.Lock()
 		s.cancel()
@@ -76,7 +76,7 @@ func (s *service) Close() bool {
 	return false
 }
 
-func (s *service) run() error {
+func (s *server) run() error {
 	var wg sync.WaitGroup
 loop:
 	for {
@@ -106,14 +106,10 @@ loop:
 	return ErrServerClosed
 }
 
-func NewSocket(option ...Option) Service {
+func NewSocket(option ...Option) Socket {
 	options := Options{}
 	for _, o := range option {
 		o(&options)
 	}
-	return NewSocketWithOption(options)
-}
-
-func NewSocketWithOption(options Options) Service {
-	return &service{opt: options}
+	return &server{opt: options}
 }

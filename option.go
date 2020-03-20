@@ -14,6 +14,12 @@ type Option func(options *Options)
 
 var DefaultPort = 8080
 
+func WithOptions(opt Options) Option {
+	return func(options *Options) {
+		options = &opt
+	}
+}
+
 func WithAddr(addr net.Addr) Option {
 	return func(options *Options) {
 		options.Addr = addr

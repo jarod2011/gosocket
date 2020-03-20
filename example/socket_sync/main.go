@@ -12,7 +12,7 @@ import (
 var addr = &net.TCPAddr{
 	Port: 8000,
 }
-var serve gosocket.Service
+var serve gosocket.Socket
 
 var timeout = time.Second * 3
 
