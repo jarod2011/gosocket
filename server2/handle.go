@@ -1,3 +1,3 @@
-package server
+package server2
 
 type ConnectionHandler func(conn Conn) error
