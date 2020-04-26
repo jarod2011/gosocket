@@ -1,2 +1,6 @@
 github.com/jarod2011/go-log v0.0.0-20200319143107-80541649676f h1:KKgQY77W7kky79hcsf7uJZCz6IR+av4Qwf0jq8mt+uY=
 github.com/jarod2011/go-log v0.0.0-20200319143107-80541649676f/go.mod h1:zslnUCfh3j2smoT9yFpK0+vcXelKqgyL/X5WsftUJZg=
+github.com/jarod2011/go-log v0.1.0 h1:0VuzvjMN2Z270MiIyu+lgW8l9BGyp2XOFoU10KPrYb0=
+github.com/jarod2011/go-log v0.1.0/go.mod h1:zslnUCfh3j2smoT9yFpK0+vcXelKqgyL/X5WsftUJZg=
+github.com/jarod2011/go-log v0.1.1 h1:Z3Cqu3XZ7MWwWOxlJnYfjUm2BxSbfUxiWAl3GVyrbfM=
+github.com/jarod2011/go-log v0.1.1/go.mod h1:zslnUCfh3j2smoT9yFpK0+vcXelKqgyL/X5WsftUJZg=
