@@ -1,7 +1,6 @@
 package conn
 
 import (
-	"github.com/jarod2011/gosocket/buffers"
 	"net"
 	"sync"
 	"testing"
@@ -12,46 +11,33 @@ func TestConn(t *testing.T) {
 	c1, c2 := net.Pipe()
 	con1 := New(c1)
 	con2 := New(c2)
-	buf := buffers.New()
-	b1 := buf.Get()
-	defer buf.Put(b1)
-	b2 := buf.Get()
-	defer buf.Put(b2)
+
+	b1 := bufferPool.Get()
+	defer bufferPool.Put(b1)
+	b2 := bufferPool.Get()
+	defer bufferPool.Put(b2)
 	var nr1, nw1, nw2, nr2 int
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		defer con1.Close()
-		con1.SetReadDeadline(time.Now().Add(time.Second * 1))
-		n, err := con1.Write(append([]byte{0x11}))
+		n, err := con1.WriteUntil([]byte{0x11}, time.Now().Add(time.Microsecond*500))
 		t.Log(err)
 		nw1 += n
-		for {
-			con1.SetReadDeadline(time.Now().Add(time.Millisecond * 50))
-			m, err := b1.ReadFrom(con1)
-			t.Log(err)
-			nr1 += int(m)
-			if m > 0 {
-				return
-			}
-		}
+		nr1, err = con1.ReadToUntil(b1, time.Now().Add(time.Second))
+		t.Log(err)
 	}()
 	go func() {
 		defer wg.Done()
 		defer con2.Close()
-		for {
-			con2.SetReadDeadline(time.Now().Add(time.Millisecond * 50))
-			n, err := b2.ReadFrom(con2)
+		n, err := con2.ReadToUntil(b2, time.Now().Add(time.Millisecond*500))
+		if n > 0 {
+			nw2, err = con2.WriteUntil([]byte{0x11, 0x12}, time.Now().Add(time.Second))
 			t.Log(err)
-			nr2 += int(n)
-			if n > 0 {
-				m, err := con2.Write([]byte{0x11, 0x12})
-				t.Log(err)
-				nw2 += m
-				return
-			}
 		}
+		nr2 += n
+		t.Log(err)
 	}()
 	wg.Wait()
 	t.Logf("con1 read %d write %d", nr1, nw1)
@@ -75,4 +61,52 @@ func TestConn(t *testing.T) {
 		t.Errorf("%d != %d", con1.ReadBytes(), con2.WriteBytes())
 	}
 	t.Log(con1.Created(), con2.Created())
+}
+
+func genClientServer(t *testing.T) (net.Conn, net.Conn) {
+	lis, err := net.Listen("tcp", ":19934")
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := net.Dial(lis.Addr().Network(), lis.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cc1, err := lis.Accept()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cc1, client
+}
+
+func TestConn2(t *testing.T) {
+	c1, c2 := genClientServer(t)
+	con1 := New(c1)
+	con2 := New(c2)
+	defer con1.Close()
+	defer con2.Close()
+	b1 := bufferPool.Get()
+	defer bufferPool.Put(b1)
+	b2 := bufferPool.Get()
+	defer bufferPool.Put(b2)
+	con1.ReadToUntil(b1, time.Now().Add(time.Millisecond*100))
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		n, err := con2.ReadToUntil(b2, time.Now().Add(time.Millisecond*200))
+		t.Log(n, err)
+		wg.Done()
+	}()
+	con1.WriteUntil([]byte{0x11, 0x22}, time.Now().Add(time.Millisecond*100))
+	con1.Close()
+	con1.WriteUntil([]byte{0x11, 0x22}, time.Now().Add(time.Millisecond*100))
+	time.Sleep(time.Millisecond * 300)
+	con1.WriteUntil([]byte{0x11, 0x22}, time.Now().Add(time.Millisecond*100))
+	wg.Wait()
+	t.Log(b2.Bytes())
+	go con1.ReadUntil(time.Now().Add(time.Millisecond * 100))
+	con2.Write([]byte{0x11})
+	con2.Close()
+	con1.WriteUntil([]byte{0x11}, time.Now().Add(time.Millisecond*100))
+	time.Sleep(time.Second)
 }

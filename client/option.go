@@ -8,20 +8,16 @@ import (
 // Options
 // Client Options
 type Options struct {
-	ServerAddr     string            // Server Address
-	ReadTimeout    time.Duration     // read timeout duration
-	WriteTimeout   time.Duration     // write timeout duration
-	OnClosedHandle OnClosed          // handle on closed connection
-	Handler        ConnectionHandler // handle on connection
+	ServerAddr     string        // Server Address
+	ServerNetwork  string        // Server Network
+	ReadTimeout    time.Duration // read timeout duration
+	WriteTimeout   time.Duration // write timeout duration
+	OnClosedHandle OnClosed      // handle on closed connection
 }
 
 // Option
 // callback to set Options value
 type Option func(options *Options)
-
-// OnHandler
-// handle the connection
-type ConnectionHandler func(cc conn.Conn, opt Options)
 
 // OnClosed
 // handle the connection closed
@@ -40,6 +36,14 @@ func WithOptions(opt Options) Option {
 func WithServerAddr(addr string) Option {
 	return func(options *Options) {
 		options.ServerAddr = addr
+	}
+}
+
+// WithServerNetwork
+// Set new address overwrite current Options.ServerNetwork
+func WithServerNetwork(network string) Option {
+	return func(options *Options) {
+		options.ServerNetwork = network
 	}
 }
 
@@ -62,11 +66,5 @@ func WithWriteTimeout(duration time.Duration) Option {
 func WithOnClosed(handle OnClosed) Option {
 	return func(options *Options) {
 		options.OnClosedHandle = handle
-	}
-}
-
-func WithOnHandleConnection(handle ConnectionHandler) Option {
-	return func(options *Options) {
-		options.Handler = handle
 	}
 }
