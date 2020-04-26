@@ -19,6 +19,7 @@ func (b buffers) Get() *bytes.Buffer {
 }
 
 func (b buffers) Put(buf *bytes.Buffer) {
+	buf.Reset()
 	b.pool.Put(buf)
 }
 
