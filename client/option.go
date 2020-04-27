@@ -1,33 +1,30 @@
 package client
 
 import (
-	"github.com/jarod2011/gosocket/conn"
 	"time"
 )
 
 // Options
 // Client Options
 type Options struct {
-	ServerAddr     string        // Server Address
-	ServerNetwork  string        // Server Network
-	ReadTimeout    time.Duration // read timeout duration
-	WriteTimeout   time.Duration // write timeout duration
-	OnClosedHandle OnClosed      // handle on closed connection
+	ServerAddr    string        // Server Address
+	ServerNetwork string        // Server Network
+	ReadTimeout   time.Duration // read timeout duration
+	WriteTimeout  time.Duration // write timeout duration
 }
 
 // Option
 // callback to set Options value
 type Option func(options *Options)
 
-// OnClosed
-// handle the connection closed
-type OnClosed func(cc conn.Conn, closed bool, err error)
-
 // WithOptions
 // Set new Options overwrite current Options
 func WithOptions(opt Options) Option {
 	return func(options *Options) {
-		options = &opt
+		options.ServerNetwork = opt.ServerNetwork
+		options.WriteTimeout = opt.WriteTimeout
+		options.ReadTimeout = opt.ReadTimeout
+		options.ServerAddr = opt.ServerAddr
 	}
 }
 
@@ -60,11 +57,5 @@ func WithReadTimeout(duration time.Duration) Option {
 func WithWriteTimeout(duration time.Duration) Option {
 	return func(options *Options) {
 		options.WriteTimeout = duration
-	}
-}
-
-func WithOnClosed(handle OnClosed) Option {
-	return func(options *Options) {
-		options.OnClosedHandle = handle
 	}
 }

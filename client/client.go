@@ -1,17 +1,21 @@
 package client
 
 import (
-	"errors"
+	"github.com/jarod2011/gosocket/buffers"
 	"github.com/jarod2011/gosocket/conn"
 	"net"
+	"time"
 )
+
+var buf = buffers.New()
 
 // Client
 // socket client interface
 type Client interface {
 	Options() Options // get client current options
-	Connect() error
-	Handling() error
+	Init(opts ...Option) error
+	Send([]byte) (int, error)
+	Recv() ([]byte, error)
 	Close() error
 }
 
@@ -20,12 +24,12 @@ type client struct {
 	cc  conn.Conn
 }
 
-func (c *client) Handling() error {
-	if c.opt.Handler == nil {
-		return errors.New("handler required")
-	}
-	c.opt.Handler(c.cc)
-	return nil
+func (c *client) Send(b []byte) (cnt int, err error) {
+	return c.cc.WriteUntil(b, time.Now().Add(c.Options().WriteTimeout))
+}
+
+func (c *client) Recv() ([]byte, error) {
+	return c.cc.ReadUntil(time.Now().Add(c.Options().ReadTimeout))
 }
 
 func (c *client) Close() error {
@@ -36,8 +40,11 @@ func (c client) Options() Options {
 	return c.opt
 }
 
-func (c *client) Connect() error {
-	cc, err := net.Dial("tcp", c.opt.ServerAddr)
+func (c *client) Init(opts ...Option) error {
+	for _, o := range opts {
+		o(&c.opt)
+	}
+	cc, err := net.Dial(c.opt.ServerNetwork, c.opt.ServerAddr)
 	if err != nil {
 		return err
 	}
@@ -45,12 +52,18 @@ func (c *client) Connect() error {
 	return nil
 }
 
+var DefaultTimeout = time.Second * 10
+
 // New
 // create socket client by optional Option
 func New(opts ...Option) Client {
-	c := new(client)
+	c := client{opt: Options{
+		ServerNetwork: "tcp",
+		ReadTimeout:   DefaultTimeout,
+		WriteTimeout:  DefaultTimeout,
+	}}
 	for _, o := range opts {
 		o(&c.opt)
 	}
-	return c
+	return &c
 }
