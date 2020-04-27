@@ -11,6 +11,7 @@ import (
 )
 
 var bufferPool = buffers.New()
+var uuid uint64
 
 type Conn interface {
 	net.Conn
@@ -22,9 +23,11 @@ type Conn interface {
 	Created() time.Time
 	SetSeparator(separator uint8)
 	GetSeparator() uint8
+	ID() uint64
 }
 
 type conn struct {
+	id uint64
 	net.Conn
 	writeBytes uint64
 	readBytes  uint64
@@ -132,9 +135,14 @@ func (c conn) Created() time.Time {
 	return time.Unix(c.sec, c.nsec)
 }
 
+func (c conn) ID() uint64 {
+	return c.id
+}
+
 func New(cc net.Conn) Conn {
 	conn := new(conn)
 	conn.Conn = cc
+	conn.id = atomic.AddUint64(&uuid, 1)
 	tm := time.Now()
 	conn.sec = tm.Unix()
 	conn.nsec = int64(tm.Nanosecond())

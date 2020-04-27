@@ -11,7 +11,9 @@ func TestConn(t *testing.T) {
 	c1, c2 := net.Pipe()
 	con1 := New(c1)
 	con2 := New(c2)
-
+	if con1.ID() != 1 {
+		t.Errorf("id %d", con1.ID())
+	}
 	b1 := bufferPool.Get()
 	defer bufferPool.Put(b1)
 	b2 := bufferPool.Get()
