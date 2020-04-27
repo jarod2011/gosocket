@@ -89,6 +89,27 @@ func TestConn2(t *testing.T) {
 	defer bufferPool.Put(b1)
 	b2 := bufferPool.Get()
 	defer bufferPool.Put(b2)
+	con1.SetSeparator(0xfe)
+	t.Log(con1.GetSeparator())
+	con2.SetSeparator(0xfe)
+	t.Log(con2.GetSeparator())
+	t1 := time.Now()
+	var wg1 sync.WaitGroup
+	t.Log("start check")
+	wg1.Add(1)
+	go func() {
+		t.Log("read in routine 5 seconds")
+		con2.ReadUntil(time.Now().Add(time.Second * 5))
+		wg1.Done()
+	}()
+	t.Log("write in one second")
+	con1.WriteUntil([]byte{0x11, 0x22}, time.Now().Add(time.Second))
+	t.Log("write ok")
+	wg1.Wait()
+	t.Log("read ok")
+	if time.Since(t1).Seconds() > 4 {
+		t.Errorf("use separator should not use more time")
+	}
 	con1.ReadToUntil(b1, time.Now().Add(time.Millisecond*100))
 	var wg sync.WaitGroup
 	wg.Add(1)

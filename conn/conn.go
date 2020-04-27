@@ -3,6 +3,7 @@ package conn
 import (
 	"errors"
 	"github.com/jarod2011/gosocket/buffers"
+	"github.com/jarod2011/gosocket/util"
 	"io"
 	"net"
 	"sync/atomic"
@@ -19,6 +20,8 @@ type Conn interface {
 	WriteBytes() uint64
 	ReadBytes() uint64
 	Created() time.Time
+	SetSeparator(separator uint8)
+	GetSeparator() uint8
 }
 
 type conn struct {
@@ -27,6 +30,15 @@ type conn struct {
 	readBytes  uint64
 	sec        int64
 	nsec       int64
+	separator  uint8
+}
+
+func (c *conn) SetSeparator(separator uint8) {
+	c.separator = separator
+}
+
+func (c *conn) GetSeparator() uint8 {
+	return c.separator
 }
 
 func (c *conn) ReadToUntil(writer io.Writer, expire time.Time) (int, error) {
@@ -38,30 +50,38 @@ func (c *conn) ReadToUntil(writer io.Writer, expire time.Time) (int, error) {
 	return 0, err
 }
 
-func (c *conn) ReadUntil(expire time.Time) ([]byte, error) {
+func (c *conn) ReadUntil(expire time.Time) (buf []byte, err error) {
 	timeout := time.After(time.Until(expire))
 	b := bufferPool.Get()
 	defer bufferPool.Put(b)
 	var cnt int64
-	var err error
+	nextout := false
 	for {
 		select {
 		case <-timeout:
 			err = errors.New("context deadline")
-			goto result
+			return
 		default:
 			if err = c.SetReadDeadline(time.Now().Add(time.Millisecond * 50)); err != nil {
-				goto result
+				return
 			}
 			n, err1 := b.ReadFrom(c)
 			cnt += n
-			if err1 != nil && err1 == io.EOF {
-				goto result
+			if n > 0 {
+				buf = append(buf, b.Next(int(n))...)
+				nextout = buf[len(buf)-1] == c.separator
+			}
+			if err1 != nil {
+				if util.IsTimeout(err1) && nextout {
+					buf = buf[0 : len(buf)-1]
+					return
+				}
+				if err1 == io.EOF {
+					return
+				}
 			}
 		}
 	}
-result:
-	return b.Next(int(cnt)), err
 }
 
 func (c *conn) WriteUntil(b []byte, expire time.Time) (cnt int, err error) {
@@ -81,6 +101,9 @@ func (c *conn) WriteUntil(b []byte, expire time.Time) (cnt int, err error) {
 				return
 			}
 		}
+	}
+	if c.separator > 0 {
+		c.Write([]byte{c.separator})
 	}
 	return
 }
