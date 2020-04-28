@@ -10,8 +10,9 @@ install:
   - go get github.com/mattn/goveralls
 
 script:
+  - overalls -project=github.com/jarod2011/gosocket -covermode=count -ignore='.git,_vendor'
+  - goveralls -coverprofile=overalls.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN
   - go test -race -coverprofile=coverage.txt -covermode=atomic
-  - goveralls -coverprofile=coverage.txt -service=travis-ci -repotoken $COVERALLS_TOKEN
   - go test -v -test.bench=".*" .
 
 after_success:
