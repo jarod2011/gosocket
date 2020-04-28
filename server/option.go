@@ -8,6 +8,7 @@ type Options struct {
 	Log           Logger
 	Repo          conn_repo.Repo
 	ClientMaximum int
+	PrintDebug    bool
 }
 
 type Option func(options *Options)
@@ -49,5 +50,11 @@ func WithRepo(repo conn_repo.Repo) Option {
 func WithMaximumOnlineClients(maximum int) Option {
 	return func(options *Options) {
 		options.ClientMaximum = maximum
+	}
+}
+
+func WithEnableDebug() Option {
+	return func(options *Options) {
+		options.Log.EnableDebug()
 	}
 }
