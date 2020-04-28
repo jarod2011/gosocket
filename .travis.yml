@@ -8,7 +8,6 @@ go:
 install:
   - go get github.com/go-playground/overalls
   - go get github.com/mattn/goveralls
-  - go get github.com/jarod2011/gosocket
 
 script:
   - overalls -project=github.com/jarod2011/gosocket -covermode=count -ignore='.git,_vendor'
