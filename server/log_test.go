@@ -54,7 +54,7 @@ func TestDefaultLogger_EnableDebug(t *testing.T) {
 	}
 	buf.Reset()
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	log.SetFatalExit(false)
 	go func() {
 		defer wg.Done()
@@ -65,6 +65,12 @@ func TestDefaultLogger_EnableDebug(t *testing.T) {
 		if buf.Len() > 0 {
 			t.Error(buf.Len())
 		}
+	}()
+	go func() {
+		defer wg.Done()
+		defer func() {
+			recover()
+		}()
 		log.E().SetWriter(buf)
 		l.Log(fatalPrefix, "111")
 		if buf.Len() == 0 {
