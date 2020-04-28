@@ -28,6 +28,22 @@ func TestMemoryRepo(t *testing.T) {
 	if mem.Online() != 2 {
 		t.Errorf("online %d", mem.Online())
 	}
+	var cnt int
+	mem.Iterate(func(cc conn.Conn) bool {
+		cnt++
+		return true
+	})
+	if cnt != mem.Online() {
+		t.Errorf("cnt %d != online %d", cnt, mem.Online())
+	}
+	cnt = 0
+	mem.Iterate(func(cc conn.Conn) bool {
+		cnt++
+		return false
+	})
+	if cnt != 1 {
+		t.Errorf("cnt %d != 1", cnt)
+	}
 	if err := mem.RemoveConn(con1); err != nil {
 		t.Error(err)
 	}

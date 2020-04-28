@@ -11,11 +11,18 @@ type Repo interface {
 	RemoveConn(cc conn.Conn) error
 	Online() int
 	GetConn(id uint64) (conn.Conn, bool)
+	Iterate(func(cc conn.Conn) bool)
 }
 
 type memoryRepo struct {
 	store  sync.Map
 	online int32
+}
+
+func (m *memoryRepo) Iterate(fn func(cc conn.Conn) bool) {
+	m.store.Range(func(key, value interface{}) bool {
+		return fn(value.(conn.Conn))
+	})
 }
 
 func (m *memoryRepo) AddConn(cc conn.Conn) (uint64, error) {
