@@ -24,6 +24,7 @@ func WithOptions(opt Options) Option {
 		options.Log = opt.Log
 		options.Repo = opt.Repo
 		options.ClientMaximum = opt.ClientMaximum
+		options.MaxFreeDuration = opt.MaxFreeDuration
 	}
 }
 
