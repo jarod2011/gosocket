@@ -64,7 +64,7 @@ func TestWithServerAddr(t *testing.T) {
 func TestWithMaxFreeDuration(t *testing.T) {
 	opt := Options{}
 	WithMaxFreeDuration(time.Minute * 10)(&opt)
-	if opt.MaxFreeDuration != time.Minute {
+	if opt.MaxFreeDuration != time.Minute*10 {
 		t.Errorf("err duration")
 	}
 }
