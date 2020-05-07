@@ -55,7 +55,7 @@ func (s *server) Start() error {
 			// clean online connections
 			s.opt.Log.Logf(infoPrefix+"now %d online clients, clean...", s.opt.Repo.Online())
 			s.opt.Repo.Iterate(func(cc conn.Conn) bool {
-				s.opt.Log.Logf(infoPrefix+"close conn %v, summary:\nwrite: %d bytes\nread: %d bytes\nconnected: %v", cc.RemoteAddr(), cc.WriteBytes(), cc.ReadBytes(), time.Since(cc.Created()))
+				s.opt.Log.Logf(infoPrefix+"close conn %v, summary:\nwrite: %d bytes\nread: %d bytes\nconnected: %v\nactiveAt: %v", cc.RemoteAddr(), cc.WriteBytes(), cc.ReadBytes(), time.Since(cc.Created()), cc.LastActive())
 				return true
 			})
 			time.Sleep(time.Second)
@@ -63,12 +63,24 @@ func (s *server) Start() error {
 		}()
 		printOnline := time.NewTicker(defaultSummaryPrintInterval)
 		defer printOnline.Stop()
+		checkConn := time.NewTicker(time.Second * 20)
+		defer checkConn.Stop()
 		for {
 			select {
 			case <-s.closeChan:
 				return
 			case <-printOnline.C:
 				s.opt.Log.Logf(infoPrefix+"now online %d connections", s.opt.Repo.Online())
+			case <-checkConn.C:
+				if s.opt.Repo.Online() > 0 {
+					s.opt.Repo.Iterate(func(cc conn.Conn) bool {
+						if time.Since(cc.LastActive()) > s.opt.MaxFreeDuration {
+							s.opt.Log.Logf(infoPrefix+"close free conn %v", cc.RemoteAddr())
+							cc.Close()
+						}
+						return true
+					})
+				}
 			}
 		}
 	}()
@@ -107,6 +119,7 @@ func (s *server) Start() error {
 						if err := s.opt.Repo.RemoveConn(c); err != nil {
 							s.opt.Log.Logf(errPrefix+"remove conn %v from repo failure: %v", c.RemoteAddr(), err)
 						}
+						s.opt.Log.Logf(infoPrefix+"close conn %v, summary:\nwrite: %d bytes\nread: %d bytes\nconnected: %v\nactiveAt: %v", cc.RemoteAddr(), c.WriteBytes(), c.ReadBytes(), time.Since(c.Created()), c.LastActive())
 						<-s.tickets.Repay()
 					}()
 					if err := s.hdl(c, s.closeChan); err != nil {
@@ -155,11 +168,12 @@ func (s server) Options() Options {
 }
 
 var defaultOptions = Options{
-	ServerNetwork: "tcp",
-	Repo:          conn_repo.New(),
-	Log:           new(defaultLogger),
-	ClientMaximum: defaultMaximumOnlineClients,
-	PrintDebug:    false,
+	ServerNetwork:   "tcp",
+	Repo:            conn_repo.New(),
+	Log:             new(defaultLogger),
+	ClientMaximum:   defaultMaximumOnlineClients,
+	PrintDebug:      false,
+	MaxFreeDuration: time.Minute * 10,
 }
 
 var defaultInterval = time.Second * 10

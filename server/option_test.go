@@ -4,6 +4,7 @@ import (
 	"github.com/jarod2011/gosocket/conn_repo"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestWithOptions(t *testing.T) {
@@ -57,5 +58,13 @@ func TestWithServerAddr(t *testing.T) {
 	WithServerAddr("1234")(&opt)
 	if opt.ServerAddr != "1234" {
 		t.Error("err addr")
+	}
+}
+
+func TestWithMaxFreeDuration(t *testing.T) {
+	opt := Options{}
+	WithMaxFreeDuration(time.Minute * 10)(&opt)
+	if opt.MaxFreeDuration != time.Minute {
+		t.Errorf("err duration")
 	}
 }
