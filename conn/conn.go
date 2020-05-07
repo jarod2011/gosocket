@@ -1,7 +1,6 @@
 package conn
 
 import (
-	"errors"
 	"github.com/jarod2011/gosocket/buffers"
 	"github.com/jarod2011/gosocket/util"
 	"io"
@@ -15,7 +14,7 @@ var uuid uint64
 
 type Conn interface {
 	net.Conn
-	ReadUntil(expire time.Time) ([]byte, error)
+	ReadUntil(expire time.Time, whenEmpty bool) ([]byte, error)
 	ReadToUntil(writer io.Writer, expire time.Time) (int, error)
 	WriteUntil(b []byte, expire time.Time) (int, error)
 	WriteBytes() uint64
@@ -45,7 +44,7 @@ func (c *conn) GetSeparator() uint8 {
 }
 
 func (c *conn) ReadToUntil(writer io.Writer, expire time.Time) (int, error) {
-	by, err := c.ReadUntil(expire)
+	by, err := c.ReadUntil(expire, true)
 	if len(by) > 0 {
 		cnt, _ := writer.Write(by)
 		return cnt, err
@@ -53,7 +52,7 @@ func (c *conn) ReadToUntil(writer io.Writer, expire time.Time) (int, error) {
 	return 0, err
 }
 
-func (c *conn) ReadUntil(expire time.Time) (buf []byte, err error) {
+func (c *conn) ReadUntil(expire time.Time, whenEmpty bool) (buf []byte, err error) {
 	timeout := time.After(time.Until(expire))
 	b := bufferPool.Get()
 	defer bufferPool.Put(b)
@@ -62,17 +61,25 @@ func (c *conn) ReadUntil(expire time.Time) (buf []byte, err error) {
 	for {
 		select {
 		case <-timeout:
-			err = errors.New("context deadline")
+			if len(buf) == 0 {
+				err = ErrContextDeadline
+			}
 			return
 		default:
-			if err = c.SetReadDeadline(time.Now().Add(time.Millisecond * 50)); err != nil {
+			if err = c.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 50)); err != nil {
 				return
 			}
 			n, err1 := b.ReadFrom(c)
 			cnt += n
 			if n > 0 {
 				buf = append(buf, b.Next(int(n))...)
-				nextout = buf[len(buf)-1] == c.separator
+				if buf[len(buf)-1] == c.separator {
+					nextout = true
+				} else if !whenEmpty && cnt > 0 {
+					nextout = true
+				} else {
+					nextout = false
+				}
 			}
 			if err1 != nil {
 				if util.IsTimeout(err1) && nextout {
@@ -92,10 +99,10 @@ func (c *conn) WriteUntil(b []byte, expire time.Time) (cnt int, err error) {
 	for cnt < len(b) {
 		select {
 		case <-timeout:
-			err = errors.New("context deadline")
+			err = ErrContextDeadline
 			return
 		default:
-			if err = c.SetWriteDeadline(time.Now().Add(time.Millisecond * 50)); err != nil {
+			if err = c.Conn.SetWriteDeadline(time.Now().Add(time.Millisecond * 50)); err != nil {
 				return
 			}
 			n, err1 := c.Write(b[cnt:])

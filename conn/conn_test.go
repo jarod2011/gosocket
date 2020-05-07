@@ -101,7 +101,7 @@ func TestConn2(t *testing.T) {
 	wg1.Add(1)
 	go func() {
 		t.Log("read in routine 5 seconds")
-		con2.ReadUntil(time.Now().Add(time.Second * 5))
+		con2.ReadUntil(time.Now().Add(time.Second*5), true)
 		wg1.Done()
 	}()
 	t.Log("write in one second")
@@ -127,7 +127,7 @@ func TestConn2(t *testing.T) {
 	con1.WriteUntil([]byte{0x11, 0x22}, time.Now().Add(time.Millisecond*100))
 	wg.Wait()
 	t.Log(b2.Bytes())
-	go con1.ReadUntil(time.Now().Add(time.Millisecond * 100))
+	go con1.ReadUntil(time.Now().Add(time.Millisecond*100), true)
 	con2.Write([]byte{0x11})
 	con2.Close()
 	con1.WriteUntil([]byte{0x11}, time.Now().Add(time.Millisecond*100))

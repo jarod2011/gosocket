@@ -29,7 +29,7 @@ func (c *client) Send(b []byte) (cnt int, err error) {
 }
 
 func (c *client) Recv() ([]byte, error) {
-	return c.cc.ReadUntil(time.Now().Add(c.Options().ReadTimeout))
+	return c.cc.ReadUntil(time.Now().Add(c.Options().ReadTimeout), true)
 }
 
 func (c *client) Close() error {

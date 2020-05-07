@@ -29,7 +29,7 @@ func genServer(ctx context.Context, t *testing.T) error {
 					continue
 				}
 				con := conn.New(cc)
-				rr, err := con.ReadUntil(time.Now().Add(time.Second))
+				rr, err := con.ReadUntil(time.Now().Add(time.Second), true)
 				if reflect.DeepEqual(rr, []byte{0x01, 0x02}) {
 					t.Logf("write..")
 					cc.Write(make([]byte, 100))
