@@ -61,7 +61,7 @@ func (s *server) Start() error {
 			time.Sleep(time.Second)
 			s.lst.Close()
 		}()
-		printOnline := time.NewTicker(defaultSummaryPrintInterval)
+		printOnline := time.NewTicker(s.opt.OnlinePrintInterval)
 		defer printOnline.Stop()
 		checkConn := time.NewTicker(time.Second * 20)
 		defer checkConn.Stop()
@@ -168,12 +168,13 @@ func (s server) Options() Options {
 }
 
 var defaultOptions = Options{
-	ServerNetwork:   "tcp",
-	Repo:            conn_repo.New(),
-	Log:             new(defaultLogger),
-	ClientMaximum:   defaultMaximumOnlineClients,
-	PrintDebug:      false,
-	MaxFreeDuration: time.Minute * 10,
+	ServerNetwork:       "tcp",
+	Repo:                conn_repo.New(),
+	Log:                 new(defaultLogger),
+	ClientMaximum:       defaultMaximumOnlineClients,
+	PrintDebug:          false,
+	MaxFreeDuration:     time.Minute * 10,
+	OnlinePrintInterval: defaultSummaryPrintInterval,
 }
 
 var defaultInterval = time.Second * 10

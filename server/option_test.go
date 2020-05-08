@@ -65,6 +65,14 @@ func TestWithMaxFreeDuration(t *testing.T) {
 	opt := Options{}
 	WithMaxFreeDuration(time.Minute * 10)(&opt)
 	if opt.MaxFreeDuration != time.Minute*10 {
-		t.Errorf("err duration")
+		t.Error("err duration")
+	}
+}
+
+func TestWithOnlinePrintIntervalDuration(t *testing.T) {
+	opt := Options{}
+	WithOnlinePrintIntervalDuration(time.Minute * 3)(&opt)
+	if opt.OnlinePrintInterval != time.Minute*3 {
+		t.Error("err online interval")
 	}
 }

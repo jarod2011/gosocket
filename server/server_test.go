@@ -90,6 +90,7 @@ func TestServer_Start(t *testing.T) {
 			if err := cli.Init(); err != nil {
 				t.Error(err)
 			}
+			defer cli.Close()
 			cnt, err := cli.Send([]byte{0x00, 0x01, 0x03})
 			if err != nil {
 				t.Error(err)

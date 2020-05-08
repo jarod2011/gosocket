@@ -6,13 +6,14 @@ import (
 )
 
 type Options struct {
-	ServerAddr      string
-	ServerNetwork   string
-	Log             Logger
-	Repo            conn_repo.Repo
-	ClientMaximum   int
-	PrintDebug      bool
-	MaxFreeDuration time.Duration
+	ServerAddr          string
+	ServerNetwork       string
+	Log                 Logger
+	Repo                conn_repo.Repo
+	ClientMaximum       int
+	PrintDebug          bool
+	MaxFreeDuration     time.Duration
+	OnlinePrintInterval time.Duration
 }
 
 type Option func(options *Options)
@@ -25,6 +26,7 @@ func WithOptions(opt Options) Option {
 		options.Repo = opt.Repo
 		options.ClientMaximum = opt.ClientMaximum
 		options.MaxFreeDuration = opt.MaxFreeDuration
+		options.OnlinePrintInterval = opt.OnlinePrintInterval
 	}
 }
 
@@ -67,5 +69,11 @@ func WithEnableDebug() Option {
 func WithMaxFreeDuration(duration time.Duration) Option {
 	return func(options *Options) {
 		options.MaxFreeDuration = duration
+	}
+}
+
+func WithOnlinePrintIntervalDuration(duration time.Duration) Option {
+	return func(options *Options) {
+		options.OnlinePrintInterval = duration
 	}
 }
