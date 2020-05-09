@@ -1,11 +1,14 @@
 package conn
 
 import (
+	"github.com/jarod2011/gosocket/buffers"
 	"net"
 	"sync"
 	"testing"
 	"time"
 )
+
+var bufferPool = buffers.New()
 
 func TestConn(t *testing.T) {
 	c1, c2 := net.Pipe()

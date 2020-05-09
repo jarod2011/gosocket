@@ -1,7 +1,6 @@
 package conn
 
 import (
-	"github.com/jarod2011/gosocket/buffers"
 	"github.com/jarod2011/gosocket/util"
 	"io"
 	"net"
@@ -9,7 +8,6 @@ import (
 	"time"
 )
 
-var bufferPool = buffers.New()
 var uuid uint64
 
 type Conn interface {
@@ -61,8 +59,6 @@ func (c *conn) ReadToUntil(writer io.Writer, expire time.Time) (int, error) {
 
 func (c *conn) ReadUntil(expire time.Time, whenEmpty bool) (buf []byte, err error) {
 	timeout := time.After(time.Until(expire))
-	b := bufferPool.Get()
-	defer bufferPool.Put(b)
 	defer func() {
 		if util.IsRemoteClosedError(err) || util.IsClosedConnection(err) || err == io.EOF {
 			err = io.EOF
@@ -78,13 +74,14 @@ func (c *conn) ReadUntil(expire time.Time, whenEmpty bool) (buf []byte, err erro
 			}
 			return
 		default:
-			if err = c.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 50)); err != nil {
+			if err = c.SetReadDeadline(time.Now().Add(time.Millisecond * 500)); err != nil {
 				return
 			}
-			n, err1 := b.ReadFrom(c)
-			cnt += n
+			b := make([]byte, 1024)
+			n, err1 := c.Read(b)
+			cnt += int64(n)
 			if n > 0 {
-				buf = append(buf, b.Next(int(n))...)
+				buf = append(buf, b[0:n]...)
 				if buf[len(buf)-1] == c.separator {
 					nextout = true
 				} else if !whenEmpty && cnt > 0 {
@@ -101,9 +98,9 @@ func (c *conn) ReadUntil(expire time.Time, whenEmpty bool) (buf []byte, err erro
 					}
 					continue
 				}
+				err = err1
+				return
 			}
-			err = err1
-			return
 		}
 	}
 }
@@ -121,7 +118,7 @@ func (c *conn) WriteUntil(b []byte, expire time.Time) (cnt int, err error) {
 			err = ErrContextDeadline
 			return
 		default:
-			if err = c.Conn.SetWriteDeadline(time.Now().Add(time.Millisecond * 50)); err != nil {
+			if err = c.Conn.SetWriteDeadline(time.Now().Add(time.Millisecond * 500)); err != nil {
 				return
 			}
 			n, err1 := c.Write(b[cnt:])

@@ -61,9 +61,9 @@ func TestServer_Start(t *testing.T) {
 			case <-ch:
 				return errors.New("i am close")
 			default:
-				byte, err := cc.ReadUntil(time.Now().Add(time.Millisecond*200), true)
-				if len(byte) > 0 {
-					t.Log(byte)
+				by, err := cc.ReadUntil(time.Now().Add(time.Millisecond*200), true)
+				if len(by) > 0 {
+					t.Log(by)
 				}
 				if err != nil {
 					//t.Log(err)
