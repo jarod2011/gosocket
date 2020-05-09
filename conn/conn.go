@@ -103,6 +103,7 @@ func (c *conn) ReadUntil(expire time.Time, whenEmpty bool) (buf []byte, err erro
 				}
 			}
 			err = err1
+			return
 		}
 	}
 }
