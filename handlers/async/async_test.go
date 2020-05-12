@@ -91,7 +91,7 @@ func TestNew(t *testing.T) {
 	if cnt != 7 {
 		t.Errorf("err cnt %d", cnt)
 	}
-	by, err := cc2.ReadUntil(time.Now().Add(time.Second*5), true)
+	by, err := cc2.ReadUntil(time.Now().Add(time.Second*10), true)
 	if err != nil && err != conn.ErrContextDeadline {
 		t.Error(err)
 	}
@@ -111,7 +111,7 @@ func TestNew(t *testing.T) {
 	if n5 != 0 {
 		t.Errorf("err n5 %d", n5)
 	}
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 1)
 	close(ch)
 	wg.Wait()
 	time.Sleep(time.Second)
