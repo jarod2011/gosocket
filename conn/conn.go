@@ -93,7 +93,9 @@ func (c *conn) ReadUntil(expire time.Time, whenEmpty bool) (buf []byte, err erro
 			if err1 != nil {
 				if util.IsTimeout(err1) {
 					if nextout {
-						buf = buf[0 : len(buf)-1]
+						if c.separator > 0 {
+							buf = buf[0 : len(buf)-1]
+						}
 						return
 					}
 					continue
