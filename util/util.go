@@ -7,7 +7,7 @@ import (
 
 // IsRemoteClosedError whether the remote closed connection
 func IsRemoteClosedError(err error) bool {
-	return err != nil && (strings.Contains(err.Error(), "closed by the remote host") || strings.Contains(err.Error(), "an unreachable network"))
+	return err != nil && strings.Contains(err.Error(), "closed by the remote host")
 }
 
 // IsClosedConnection whether the connection is already closed
