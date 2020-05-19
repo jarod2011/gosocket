@@ -16,6 +16,7 @@ type Options struct {
 	MaxFreeDuration     time.Duration
 	OnlinePrintInterval time.Duration
 	Ctx                 context.Context
+	OnPrint             func(ctx context.Context, repo conn_repo.Repo)
 }
 
 type Option func(options *Options)
@@ -86,5 +87,11 @@ func WithOnlinePrintIntervalDuration(duration time.Duration) Option {
 func WithContext(ctx context.Context) Option {
 	return func(options *Options) {
 		options.Ctx = ctx
+	}
+}
+
+func WithOnPrint(fn func(ctx context.Context, repo conn_repo.Repo)) Option {
+	return func(options *Options) {
+		options.OnPrint = fn
 	}
 }

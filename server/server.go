@@ -77,6 +77,9 @@ func (s *server) Start() error {
 			case <-s.ctx.Done():
 				return
 			case <-printOnline.C:
+				if s.opt.OnPrint != nil {
+					s.opt.OnPrint(s.ctx, s.opt.Repo)
+				}
 				s.opt.Log.Logf(infoPrefix+"now online %d connections", s.opt.Repo.Online())
 			case <-checkConn.C:
 				if s.opt.Repo.Online() > 0 {

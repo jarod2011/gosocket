@@ -71,7 +71,9 @@ func TestServer_Start(t *testing.T) {
 				}
 			}
 		}
-	}, WithServerAddr(":10081"), WithEnableDebug(), WithMaximumOnlineClients(15))
+	}, WithServerAddr(":10081"), WithEnableDebug(), WithMaximumOnlineClients(15), WithOnPrint(func(ctx context.Context, repo conn_repo.Repo) {
+		t.Log("online %d", repo.Online(), WithOnlinePrintIntervalDuration(time.Millisecond*10))
+	}))
 	if err := s.Start(); err == nil {
 		t.Error("should uninitialized error")
 	}

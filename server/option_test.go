@@ -88,3 +88,15 @@ func TestWithContext(t *testing.T) {
 		t.Error("nil context")
 	}
 }
+
+func TestWithOnPrint(t *testing.T) {
+	opt := Options{}
+	if opt.OnPrint != nil {
+		t.Error("should nil OnPrint")
+	}
+	WithOnPrint(func(ctx context.Context, repo conn_repo.Repo) {
+	})(&opt)
+	if opt.OnPrint == nil {
+		t.Error("nil OnPrint")
+	}
+}
