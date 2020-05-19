@@ -68,16 +68,16 @@ func newMockHandle(t *testing.T) Handler {
 }
 
 func TestNew(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
 	h := New(Option{
 		ReadTimeout:  0,
 		WriteTimeout: 0,
 		Handle:       nil,
-		Context:      nil,
+		Context:      ctx,
 	})
 	c1, c2 := net.Pipe()
 	cc1 := conn.New(c1)
 	cc2 := conn.New(c2)
-	ctx, cancel := context.WithCancel(context.Background())
 	if err := h(ctx, cc1); err == nil {
 		t.Error("should nil handle error")
 	}
