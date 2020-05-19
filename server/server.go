@@ -129,19 +129,17 @@ func (s *server) Start() error {
 				}
 				wgg.Add(1)
 				go func(c conn.Conn) {
-					defer wgg.Done()
-					defer func() {
-						s.opt.Log.Logf(debugPrefix+"remove conn %v", c.RemoteAddr())
-						if err := s.opt.Repo.RemoveConn(c); err != nil {
-							s.opt.Log.Logf(errPrefix+"remove conn %v from repo failure: %v", c.RemoteAddr(), err)
-						}
-						s.opt.Log.Logf(infoPrefix+"close conn %v, summary:\nwrite: %d bytes\nread: %d bytes\nconnected: %v\nactiveAt: %v", cc.RemoteAddr(), c.WriteBytes(), c.ReadBytes(), time.Since(c.Created()), c.LastActive())
-						c.Close()
-						<-s.tickets.Repay()
-					}()
 					if err := s.hdl(s.ctx, c); err != nil {
 						s.opt.Log.Logf(errPrefix+"handle conn %v failure: %v", c.RemoteAddr(), err)
 					}
+					s.opt.Log.Logf(debugPrefix+"remove conn %v", c.RemoteAddr())
+					if err := s.opt.Repo.RemoveConn(c); err != nil {
+						s.opt.Log.Logf(errPrefix+"remove conn %v from repo failure: %v", c.RemoteAddr(), err)
+					}
+					s.opt.Log.Logf(infoPrefix+"close conn %v, summary:\nwrite: %d bytes\nread: %d bytes\nconnected: %v\nactiveAt: %v", cc.RemoteAddr(), c.WriteBytes(), c.ReadBytes(), time.Since(c.Created()), c.LastActive())
+					c.Close()
+					<-s.tickets.Repay()
+					wgg.Done()
 				}(con)
 			}
 		}

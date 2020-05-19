@@ -70,9 +70,10 @@ func (h *handle) writeProcess() {
 			if err == conn.ErrContextDeadline {
 				continue
 			}
-			h.opt.Handle.OnWriteError(err)
-			h.errChan <- err
-			return
+			if h.opt.Handle.OnWriteError(b, err) {
+				h.errChan <- err
+				return
+			}
 		}
 	}
 }
@@ -99,7 +100,12 @@ func (h *handle) Handle(cc conn.Conn) error {
 	h.wg.Wait()
 	h.opt.Handle.OnClose()
 	h.cc.Close()
-	return <-h.errChan
+	select {
+	case err := <-h.errChan:
+		return err
+	default:
+		return nil
+	}
 }
 
 func (h *handle) Stop() {

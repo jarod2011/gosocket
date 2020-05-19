@@ -21,6 +21,6 @@ type Handler interface {
 	OnReadProcessStop()
 	OnWriteProcessStop()
 	OnWriteFinish(b []byte)
-	OnWriteError(err error)
+	OnWriteError(b []byte, err error) (ifExit bool)
 	OnClose()
 }
