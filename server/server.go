@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"github.com/jarod2011/gosocket/conn"
 	"github.com/jarod2011/gosocket/conn_repo"
@@ -15,6 +16,8 @@ type Server interface {
 	Stop() bool
 	Init(opts ...Option) error
 	Options() Options
+	AfterStart(fn func(ctx context.Context))
+	BeforeStop(fn func(ctx context.Context))
 }
 
 type ticket struct {
@@ -34,12 +37,16 @@ func (tk *ticket) Repay() <-chan struct{} {
 }
 
 type server struct {
-	closed    int32
-	opt       Options
-	lst       net.Listener
-	hdl       Handler
-	tickets   *ticket
-	closeChan chan struct{}
+	closed  int32
+	opt     Options
+	lst     net.Listener
+	hdl     Handler
+	tickets *ticket
+	ctx     context.Context
+	cancel  context.CancelFunc
+
+	afterHdl  func(ctx context.Context)
+	beforeHdl func(ctx context.Context)
 }
 
 func (s *server) Start() error {
@@ -67,7 +74,7 @@ func (s *server) Start() error {
 		defer checkConn.Stop()
 		for {
 			select {
-			case <-s.closeChan:
+			case <-s.ctx.Done():
 				return
 			case <-printOnline.C:
 				s.opt.Log.Logf(infoPrefix+"now online %d connections", s.opt.Repo.Online())
@@ -89,9 +96,15 @@ func (s *server) Start() error {
 		defer s.opt.Log.Log(debugPrefix, "listen routine exit")
 		var wgg sync.WaitGroup
 		defer wgg.Wait()
+		go func() {
+			<-time.After(time.Second)
+			if s.afterHdl != nil {
+				s.afterHdl(s.ctx)
+			}
+		}()
 		for {
 			select {
-			case <-s.closeChan:
+			case <-s.ctx.Done():
 				s.opt.Log.Logf(infoPrefix + "stop listen routine")
 				time.Sleep(time.Second)
 				return
@@ -123,7 +136,7 @@ func (s *server) Start() error {
 						c.Close()
 						<-s.tickets.Repay()
 					}()
-					if err := s.hdl(c, s.closeChan); err != nil {
+					if err := s.hdl(s.ctx, c); err != nil {
 						s.opt.Log.Logf(errPrefix+"handle conn %v failure: %v", c.RemoteAddr(), err)
 					}
 				}(con)
@@ -136,10 +149,21 @@ func (s *server) Start() error {
 
 func (s *server) Stop() bool {
 	if atomic.CompareAndSwapInt32(&s.closed, 0, 1) {
-		close(s.closeChan)
+		if s.beforeHdl != nil {
+			s.beforeHdl(s.ctx)
+		}
+		s.cancel()
 		return true
 	}
 	return false
+}
+
+func (s *server) AfterStart(fn func(ctx context.Context)) {
+	s.afterHdl = fn
+}
+
+func (s *server) BeforeStop(fn func(ctx context.Context)) {
+	s.beforeHdl = fn
 }
 
 func (s *server) Init(opts ...Option) (err error) {
@@ -160,7 +184,7 @@ func (s *server) Init(opts ...Option) (err error) {
 	}
 	s.tickets = newTicket(s.opt.ClientMaximum)
 	s.lst, err = net.Listen(s.opt.ServerNetwork, s.opt.ServerAddr)
-	s.closeChan = make(chan struct{})
+	s.ctx, s.cancel = context.WithCancel(s.opt.Ctx)
 	return
 }
 
@@ -176,13 +200,14 @@ var defaultOptions = Options{
 	PrintDebug:          false,
 	MaxFreeDuration:     time.Minute * 10,
 	OnlinePrintInterval: defaultSummaryPrintInterval,
+	Ctx:                 context.Background(),
 }
 
 var defaultInterval = time.Second * 10
 var defaultMaximumOnlineClients = 10000
 var defaultSummaryPrintInterval = time.Minute
 
-type Handler func(conn conn.Conn, notifyClose <-chan struct{}) error // handle conn
+type Handler func(ctx context.Context, conn conn.Conn) error // handle conn
 
 func New(handler Handler, opts ...Option) Server {
 	s := new(server)

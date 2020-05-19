@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"github.com/jarod2011/gosocket/conn_repo"
 	"reflect"
 	"testing"
@@ -74,5 +75,16 @@ func TestWithOnlinePrintIntervalDuration(t *testing.T) {
 	WithOnlinePrintIntervalDuration(time.Minute * 3)(&opt)
 	if opt.OnlinePrintInterval != time.Minute*3 {
 		t.Error("err online interval")
+	}
+}
+
+func TestWithContext(t *testing.T) {
+	opt := Options{}
+	if opt.Ctx != nil {
+		t.Error("should nil context")
+	}
+	WithContext(context.TODO())(&opt)
+	if opt.Ctx == nil {
+		t.Error("nil context")
 	}
 }

@@ -5,6 +5,10 @@ a go socket server
 [![Coverage Status](https://coveralls.io/repos/github/jarod2011/gosocket/badge.svg?branch=master)](https://coveralls.io/github/jarod2011/gosocket?branch=master)
 [![codecov](https://codecov.io/gh/jarod2011/gosocket/branch/master/graph/badge.svg)](https://codecov.io/gh/jarod2011/gosocket)
 
+## versions
+
+- v0.2.1 -> v0.3.0 `warning` change server.Handler parameters
+
 ## warning
 ```
 some code not complete, so , this package doesn't work yet

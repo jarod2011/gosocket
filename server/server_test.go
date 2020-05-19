@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"github.com/jarod2011/gosocket/client"
 	"github.com/jarod2011/gosocket/conn"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	s := New(func(cc conn.Conn, ch <-chan struct{}) error {
+	s := New(func(ctx context.Context, cc conn.Conn) error {
 		return nil
 	})
 	if !reflect.DeepEqual(s.Options(), defaultOptions) {
@@ -35,7 +36,7 @@ func TestServer_Init(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "handler") {
 		t.Errorf("should handler required err %v", err)
 	}
-	s = New(func(cc conn.Conn, ch <-chan struct{}) error {
+	s = New(func(ctx context.Context, cc conn.Conn) error {
 		return nil
 	}, WithMaximumOnlineClients(1), WithServerAddr("tttt"))
 	err = s.Init()
@@ -55,10 +56,10 @@ func TestServer_Init(t *testing.T) {
 func TestServer_Start(t *testing.T) {
 	defaultSummaryPrintInterval = time.Millisecond * 100
 	defaultInterval = time.Millisecond * 20
-	s := New(func(cc conn.Conn, ch <-chan struct{}) error {
+	s := New(func(ctx context.Context, cc conn.Conn) error {
 		for {
 			select {
-			case <-ch:
+			case <-ctx.Done():
 				return errors.New("i am close")
 			default:
 				by, err := cc.ReadUntil(time.Now().Add(time.Millisecond*200), true)
@@ -71,6 +72,9 @@ func TestServer_Start(t *testing.T) {
 			}
 		}
 	}, WithServerAddr(":10081"), WithEnableDebug(), WithMaximumOnlineClients(15))
+	if err := s.Start(); err == nil {
+		t.Error("should uninitialized error")
+	}
 	if err := s.Init(); err != nil {
 		t.Error(err)
 	}
@@ -102,6 +106,12 @@ func TestServer_Start(t *testing.T) {
 		}()
 	}
 	defer s.Stop()
+	s.AfterStart(func(ctx context.Context) {
+		t.Logf("after start call")
+	})
+	s.BeforeStop(func(ctx context.Context) {
+		t.Logf("before stop call")
+	})
 	if err := s.Start(); err != nil {
 		t.Error(err)
 	}

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"github.com/jarod2011/gosocket/conn_repo"
 	"time"
 )
@@ -14,6 +15,7 @@ type Options struct {
 	PrintDebug          bool
 	MaxFreeDuration     time.Duration
 	OnlinePrintInterval time.Duration
+	Ctx                 context.Context
 }
 
 type Option func(options *Options)
@@ -27,6 +29,9 @@ func WithOptions(opt Options) Option {
 		options.ClientMaximum = opt.ClientMaximum
 		options.MaxFreeDuration = opt.MaxFreeDuration
 		options.OnlinePrintInterval = opt.OnlinePrintInterval
+		if opt.Ctx != nil {
+			options.Ctx = opt.Ctx
+		}
 	}
 }
 
@@ -75,5 +80,11 @@ func WithMaxFreeDuration(duration time.Duration) Option {
 func WithOnlinePrintIntervalDuration(duration time.Duration) Option {
 	return func(options *Options) {
 		options.OnlinePrintInterval = duration
+	}
+}
+
+func WithContext(ctx context.Context) Option {
+	return func(options *Options) {
+		options.Ctx = ctx
 	}
 }

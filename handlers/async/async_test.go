@@ -1,6 +1,7 @@
 package async
 
 import (
+	"context"
 	"github.com/jarod2011/gosocket/conn"
 	"net"
 	"sync"
@@ -63,8 +64,8 @@ func TestNew(t *testing.T) {
 	c1, c2 := net.Pipe()
 	cc1 := conn.New(c1)
 	cc2 := conn.New(c2)
-	ch := make(chan struct{})
-	if err := h(cc1, ch); err == nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	if err := h(ctx, cc1); err == nil {
 		t.Error("should nil handle error")
 	}
 	h = New(Option{
@@ -75,7 +76,7 @@ func TestNew(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := h(cc1, ch)
+		err := h(ctx, cc1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -112,7 +113,7 @@ func TestNew(t *testing.T) {
 		t.Errorf("err n5 %d", n5)
 	}
 	time.Sleep(time.Second * 1)
-	close(ch)
+	cancel()
 	wg.Wait()
 	time.Sleep(time.Second)
 	if n5 != 1 {

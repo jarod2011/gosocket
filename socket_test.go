@@ -1,13 +1,14 @@
 package gosocket
 
 import (
+	"context"
 	"github.com/jarod2011/gosocket/conn"
 	"net"
 	"testing"
 )
 
 func TestNewServer(t *testing.T) {
-	NewServer(func(cc conn.Conn, notifyClose <-chan struct{}) error {
+	NewServer(func(ctx context.Context, cc conn.Conn) error {
 		return nil
 	})
 }

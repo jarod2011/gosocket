@@ -104,7 +104,7 @@ func (h *handle) Stop() {
 }
 
 func New(opt Option) server.Handler {
-	return func(cc conn.Conn, notifyClose <-chan struct{}) error {
+	return func(ctx context.Context, cc conn.Conn) error {
 		if opt.Context == nil {
 			opt.Context = context.TODO()
 		}
@@ -129,7 +129,7 @@ func New(opt Option) server.Handler {
 			ch <- h.Handle(cc)
 		}()
 		select {
-		case <-notifyClose:
+		case <-ctx.Done():
 			h.Stop()
 			return nil
 		case err := <-ch:
