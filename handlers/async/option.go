@@ -17,6 +17,9 @@ type Handler interface {
 	OnConnect(cc conn.Conn)
 	SliceIndex(b []byte) int
 	OnWork(b []byte, writeChan chan<- []byte) error
+	OnWorkProcessStop()
+	OnReadProcessStop()
+	OnWriteProcessStop()
 	OnWriteFinish(b []byte)
 	OnWriteError(err error)
 	OnClose()

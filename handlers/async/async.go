@@ -24,6 +24,7 @@ type handle struct {
 func (h *handle) readProcess() {
 	defer h.wg.Done()
 	defer close(h.workChan)
+	defer h.opt.Handle.OnReadProcessStop()
 	var last []byte
 	for {
 		select {
@@ -58,6 +59,7 @@ func (h *handle) readProcess() {
 func (h *handle) writeProcess() {
 	defer h.wg.Done()
 	defer h.Stop()
+	defer h.opt.Handle.OnWriteProcessStop()
 	for b := range h.writeChan {
 		_, err := h.cc.WriteUntil(b, time.Now().Add(h.opt.WriteTimeout))
 		h.opt.Handle.OnWriteFinish(b)
@@ -78,6 +80,7 @@ func (h *handle) writeProcess() {
 func (h *handle) workProcess() {
 	defer h.wg.Done()
 	defer close(h.writeChan)
+	defer h.opt.Handle.OnWorkProcessStop()
 	for b := range h.workChan {
 		if err := h.opt.Handle.OnWork(b, h.writeChan); err != nil {
 			h.errChan <- err

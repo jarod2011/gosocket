@@ -16,6 +16,18 @@ type mock struct {
 	t *testing.T
 }
 
+func (m *mock) OnWorkProcessStop() {
+	m.t.Logf("worker process stoped")
+}
+
+func (m *mock) OnReadProcessStop() {
+	m.t.Logf("reader process stoped")
+}
+
+func (m *mock) OnWriteProcessStop() {
+	m.t.Logf("writer process stoped")
+}
+
 func (m *mock) OnConnect(cc conn.Conn) {
 	m.t.Logf("%s connected", cc.RemoteAddr())
 	atomic.AddInt32(&n1, 1)
