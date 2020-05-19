@@ -54,8 +54,9 @@ func (m *mock) OnWriteFinish(b []byte) {
 	atomic.AddInt32(&n4, int32(len(b)))
 }
 
-func (m *mock) OnWriteError(err error) {
+func (m *mock) OnWriteError(b []byte, err error) bool {
 	m.t.Error(err)
+	return false
 }
 
 func (m *mock) OnClose() {
