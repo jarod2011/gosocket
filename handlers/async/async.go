@@ -100,6 +100,7 @@ func (h *handle) Handle(cc conn.Conn) error {
 	h.wg.Wait()
 	h.opt.Handle.OnClose()
 	h.cc.Close()
+	h.cc = nil
 	select {
 	case err := <-h.errChan:
 		return err
