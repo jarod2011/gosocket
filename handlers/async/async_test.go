@@ -72,7 +72,7 @@ func TestNew(t *testing.T) {
 	h := New(Option{
 		ReadTimeout:  0,
 		WriteTimeout: 0,
-		Handle:       nil,
+		Creator:      nil,
 		Context:      ctx,
 	})
 	c1, c2 := net.Pipe()
@@ -82,7 +82,9 @@ func TestNew(t *testing.T) {
 		t.Error("should nil handle error")
 	}
 	h = New(Option{
-		Handle:      newMockHandle(t),
+		Creator: func() Handler {
+			return newMockHandle(t)
+		},
 		ReadTimeout: time.Millisecond * 100,
 	})
 	var wg sync.WaitGroup
