@@ -2,7 +2,7 @@ package async
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"github.com/jarod2011/gosocket/conn"
 	"github.com/jarod2011/gosocket/server"
 	"io"
@@ -19,12 +19,13 @@ type handle struct {
 	errChan   chan error
 	ctx       context.Context
 	cancel    context.CancelFunc
+	hdl       Handler
 }
 
 func (h *handle) readProcess() {
 	defer h.wg.Done()
 	defer close(h.workChan)
-	defer h.opt.Handle.OnReadProcessStop()
+	defer h.hdl.OnReadProcessStop()
 	var last []byte
 	for {
 		select {
@@ -36,7 +37,7 @@ func (h *handle) readProcess() {
 				last = append(last, by...)
 			}
 			if len(last) > 0 {
-				cnt := h.opt.Handle.SliceIndex(last)
+				cnt := h.hdl.SliceIndex(last)
 				if cnt > 0 {
 					h.workChan <- last[0:cnt]
 					last = last[cnt:]
@@ -59,10 +60,10 @@ func (h *handle) readProcess() {
 func (h *handle) writeProcess() {
 	defer h.wg.Done()
 	defer h.Stop()
-	defer h.opt.Handle.OnWriteProcessStop()
+	defer h.hdl.OnWriteProcessStop()
 	for b := range h.writeChan {
 		_, err := h.cc.WriteUntil(b, time.Now().Add(h.opt.WriteTimeout))
-		h.opt.Handle.OnWriteFinish(b)
+		h.hdl.OnWriteFinish(b)
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -70,7 +71,7 @@ func (h *handle) writeProcess() {
 			if err == conn.ErrContextDeadline {
 				continue
 			}
-			if h.opt.Handle.OnWriteError(b, err) {
+			if h.hdl.OnWriteError(b, err) {
 				h.errChan <- err
 				return
 			}
@@ -81,9 +82,9 @@ func (h *handle) writeProcess() {
 func (h *handle) workProcess() {
 	defer h.wg.Done()
 	defer close(h.writeChan)
-	defer h.opt.Handle.OnWorkProcessStop()
+	defer h.hdl.OnWorkProcessStop()
 	for b := range h.workChan {
-		if err := h.opt.Handle.OnWork(b, h.writeChan); err != nil {
+		if err := h.hdl.OnWork(b, h.writeChan); err != nil {
 			h.errChan <- err
 			return
 		}
@@ -92,13 +93,13 @@ func (h *handle) workProcess() {
 
 func (h *handle) Handle(cc conn.Conn) error {
 	h.cc = cc
-	h.opt.Handle.OnConnect(cc)
+	h.hdl.OnConnect(cc)
 	h.wg.Add(3)
 	go h.readProcess()
 	go h.workProcess()
 	go h.writeProcess()
 	h.wg.Wait()
-	h.opt.Handle.OnClose()
+	h.hdl.OnClose()
 	h.cc.Close()
 	h.cc = nil
 	select {
@@ -126,8 +127,12 @@ func New(opt Option) server.Handler {
 		}
 		h.ctx, h.cancel = context.WithCancel(opt.Context)
 		ch := make(chan error, 1)
-		if h.opt.Handle == nil {
-			return fmt.Errorf("handler is nil")
+		if h.opt.Creator == nil {
+			return errors.New("nil handler creator")
+		}
+		h.hdl = h.opt.Creator()
+		if h.hdl == nil {
+			return errors.New("nil handler")
 		}
 		if h.opt.ReadTimeout <= 0 {
 			h.opt.ReadTimeout = time.Second

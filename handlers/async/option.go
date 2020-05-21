@@ -9,7 +9,7 @@ import (
 type Option struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
-	Handle       Handler
+	Creator      func() Handler
 	Context      context.Context
 }
 
