@@ -127,10 +127,12 @@ func New(opt Option) server.Handler {
 		}
 		h.ctx, h.cancel = context.WithCancel(opt.Context)
 		ch := make(chan error, 1)
-		if h.opt.Creator == nil {
-			return errors.New("nil handler creator")
+		if h.opt.Handle == nil {
+			if h.opt.Creator == nil {
+				return errors.New("nil handler creator")
+			}
+			h.hdl = h.opt.Creator()
 		}
-		h.hdl = h.opt.Creator()
 		if h.hdl == nil {
 			return errors.New("nil handler")
 		}

@@ -10,6 +10,7 @@ type Option struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	Creator      func() Handler
+	Handle       Handler
 	Context      context.Context
 }
 
