@@ -20,20 +20,22 @@ type Server interface {
 	BeforeStop(fn func(ctx context.Context))
 }
 
-type ticket struct {
-	p chan struct{}
+type ticket chan struct{}
+
+func (t ticket) take() {
+	<-t
 }
 
-func newTicket(cap int) *ticket {
-	return &ticket{p: make(chan struct{}, cap)}
+func (t ticket) repay() {
+	t <- struct{}{}
 }
 
-func (tk *ticket) Take() chan<- struct{} {
-	return tk.p
-}
-
-func (tk *ticket) Repay() <-chan struct{} {
-	return tk.p
+func newTicket(cap int) ticket {
+	t := make(ticket, cap)
+	for i := 0; i < cap; i++ {
+		t <- struct{}{}
+	}
+	return t
 }
 
 type server struct {
@@ -41,7 +43,7 @@ type server struct {
 	opt     Options
 	lst     net.Listener
 	hdl     Handler
-	tickets *ticket
+	tickets ticket
 	ctx     context.Context
 	cancel  context.CancelFunc
 
@@ -114,17 +116,17 @@ func (s *server) Start() error {
 				return
 			case <-time.After(defaultInterval):
 				s.opt.Log.Logf(warnPrefix+"online %d is maximum(%d)", s.opt.Repo.Online(), s.opt.ClientMaximum)
-			case s.tickets.Take() <- struct{}{}:
+			case <-s.tickets:
 				cc, err := s.lst.Accept()
 				if err != nil {
 					s.opt.Log.Logf(errPrefix+"accept connect failure: %v", err)
-					<-s.tickets.Repay()
+					s.tickets.repay()
 					continue
 				}
 				con := conn.New(cc)
 				if _, err := s.opt.Repo.AddConn(con); err != nil {
 					s.opt.Log.Logf(errPrefix+"save conn %v to repo failure: %v", con.RemoteAddr(), err)
-					<-s.tickets.Repay()
+					s.tickets.repay()
 					con.Close()
 					continue
 				}
@@ -139,7 +141,7 @@ func (s *server) Start() error {
 					}
 					s.opt.Log.Logf(infoPrefix+"close conn %v, summary:\nwrite: %d bytes\nread: %d bytes\nconnected: %v\nactiveAt: %v", cc.RemoteAddr(), c.WriteBytes(), c.ReadBytes(), time.Since(c.Created()), c.LastActive())
 					c.Close()
-					<-s.tickets.Repay()
+					s.tickets.repay()
 					wgg.Done()
 				}(con)
 			}
